@@ -64,6 +64,13 @@ class AudioSystem {
     // Play using Text-to-Speech
     async playTTS(clinicName, number) {
         return new Promise((resolve) => {
+            // Check if speech synthesis is available
+            if (typeof speechSynthesis === 'undefined') {
+                console.warn('Speech synthesis not available');
+                resolve();
+                return;
+            }
+            
             const utterance = new SpeechSynthesisUtterance();
             
             // Configure Arabic voice
@@ -78,7 +85,17 @@ class AudioSystem {
                 setTimeout(resolve, 500);
             };
             
-            speechSynthesis.speak(utterance);
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event.error);
+                resolve();
+            };
+            
+            try {
+                speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.error('Error speaking:', error);
+                resolve();
+            }
         });
     }
 

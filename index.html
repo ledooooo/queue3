@@ -283,13 +283,23 @@
                 minute: '2-digit'
             });
             
-            document.getElementById('currentDateTime').textContent = dateTimeString;
+            const dateTimeElement = document.getElementById('currentDateTime');
+            if (dateTimeElement) {
+                dateTimeElement.textContent = dateTimeString;
+            }
         }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateDateTime();
             setInterval(updateDateTime, 60000); // Update every minute
+            
+            // Check if Firebase is available
+            setTimeout(() => {
+                if (typeof firebase === 'undefined') {
+                    console.warn('Firebase not loaded - system will work in demo mode');
+                }
+            }, 2000);
         });
         
         // Add smooth transitions for cards

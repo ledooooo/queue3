@@ -6,13 +6,31 @@ let customMessage = null;
 
 // Initialize display
 document.addEventListener('DOMContentLoaded', function() {
-    initializeDisplay();
+    // Wait for Firebase to initialize
+    setTimeout(() => {
+        initializeDisplay();
+    }, 1000);
 });
 
 async function initializeDisplay() {
     try {
+        console.log('Starting display initialization...');
+        
+        // Check if Firebase is available
+        if (typeof firebase === 'undefined') {
+            throw new Error('Firebase library not loaded');
+        }
+        
+        if (typeof database === 'undefined' || database === null) {
+            throw new Error('Firebase database not initialized');
+        }
+        
         // Initialize audio system
-        await audioSystem.initialize();
+        if (typeof audioSystem !== 'undefined') {
+            await audioSystem.initialize();
+        } else {
+            console.warn('Audio system not available');
+        }
         
         // Load initial data
         await loadSettings();
@@ -29,8 +47,10 @@ async function initializeDisplay() {
         setInterval(updateClock, 1000);
         
         console.log('Display initialized successfully');
+        
     } catch (error) {
         console.error('Error initializing display:', error);
+        showDisplayError('خطأ في تحميل شاشة العرض: ' + error.message);
     }
 }
 
@@ -198,7 +218,10 @@ function handleCurrentDisplay(data) {
     }
     
     // Update last update time
-    document.getElementById('lastUpdate').textContent = 'الآن';
+    const lastUpdateElement = document.getElementById('lastUpdate');
+    if (lastUpdateElement) {
+        lastUpdateElement.textContent = 'الآن';
+    }
     
     console.log('Current display updated:', data);
 }
@@ -417,6 +440,24 @@ window.addEventListener('online', function() {
 });
 
 window.addEventListener('offline', function() {
-    console.log('Network disconnected - showing offline message');
-    // You could show an offline indicator here
-});
+    console.log('Network disconnected 
+// Show display error
+function showDisplayError(message) {
+    const errorHTML = `
+        <div class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+            <div class="bg-red-600 text-white rounded-xl p-8 text-center max-w-md">
+                <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold mb-4">خطأ في شاشة العرض</h2>
+                <p class="mb-6">${message}</p>
+                <div class="space-y-3">
+                    <button onclick="location.reload()" class="w-full bg-white text-red-600 py-3 rounded-lg font-semibold hover:bg-gray-100">
+                        <i class="fas fa-redo ml-2"></i>
+                        إعادة المحاولة
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.innerHTML = errorHTML;
+}

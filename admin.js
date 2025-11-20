@@ -4,13 +4,31 @@ let settings = {};
 
 // Initialize admin panel
 document.addEventListener('DOMContentLoaded', function() {
-    initializeAdmin();
+    // Wait for Firebase to initialize
+    setTimeout(() => {
+        initializeAdmin();
+    }, 1000);
 });
 
 async function initializeAdmin() {
     try {
+        console.log('Starting admin panel initialization...');
+        
+        // Check if Firebase is initialized
+        if (typeof firebase === 'undefined') {
+            throw new Error('Firebase library not loaded');
+        }
+        
+        if (typeof database === 'undefined') {
+            throw new Error('Firebase database not initialized');
+        }
+        
         // Initialize audio system
-        await audioSystem.initialize();
+        if (typeof audioSystem !== 'undefined') {
+            await audioSystem.initialize();
+        } else {
+            console.warn('Audio system not available');
+        }
         
         // Load settings
         await loadSettings();
@@ -22,9 +40,13 @@ async function initializeAdmin() {
         updateUI();
         
         console.log('Admin panel initialized successfully');
+        
     } catch (error) {
         console.error('Error initializing admin panel:', error);
-        showNotification('خطأ في تحميل لوحة الإدارة', 'error');
+        showNotification('خطأ في تحميل لوحة الإدارة: ' + error.message, 'error');
+        
+        // Show fallback UI
+        showFallbackUI();
     }
 }
 
@@ -451,6 +473,38 @@ function updateUI() {
     document.getElementById('totalNumbers').textContent = totalNumbers;
 }
 
+// Show fallback UI when error occurs
+function showFallbackUI() {
+    const mainContent = document.querySelector('main') || document.body;
+    
+    const fallbackHTML = `
+        <div class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-8 shadow-lg text-center max-w-md">
+                <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">خطأ في تحميل النظام</h2>
+                <p class="text-gray-600 mb-6">حدث خطأ أثناء تحميل لوحة الإدارة. قد يكون السبب:</p>
+                <ul class="text-sm text-gray-500 text-right mb-6">
+                    <li>• مشكلة في اتصال الإنترنت</li>
+                    <li>• خطأ في إعدادات Firebase</li>
+                    <li>• المتصفح لا يدعم JavaScript</li>
+                </ul>
+                <div class="space-y-3">
+                    <button onclick="location.reload()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
+                        <i class="fas fa-redo ml-2"></i>
+                        إعادة المحاولة
+                    </button>
+                    <button onclick="window.location.href='index.html'" class="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700">
+                        <i class="fas fa-home ml-2"></i>
+                        العودة للصفحة الرئيسية
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    mainContent.innerHTML = fallbackHTML;
+}
+
 // Show notification
 function showNotification(message, type = 'info') {
     // Create notification element
@@ -485,7 +539,9 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.classList.add('translate-x-full');
         setTimeout(() => {
-            document.body.removeChild(notification);
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
         }, 300);
     }, 3000);
 }

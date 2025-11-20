@@ -294,7 +294,33 @@
     </div>
 
     <script src="firebase-config.js"></script>
+    <script src="firebase-config-test.js"></script>
     <script src="audio-system.js"></script>
     <script src="admin.js"></script>
+    
+    <script>
+        // Global error handler for the page
+        window.addEventListener('error', function(e) {
+            console.error('Page error:', e.error);
+            if (e.error && e.error.message && e.error.message.includes('firebase')) {
+                showNotification('خطأ في تحميل Firebase. تأكد من إعدادات الاتصال', 'error');
+            }
+        });
+        
+        // Check if required libraries are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (typeof firebase === 'undefined') {
+                    console.error('Firebase not loaded');
+                    showNotification('مكتبة Firebase لم يتم تحميلها. تأكد من الاتصال بالإنترنت', 'error');
+                }
+                
+                if (typeof database === 'undefined' || database === null) {
+                    console.error('Firebase database not initialized');
+                    showNotification('قاعدة البيانات لم يتم تهيئتها. تحقق من إعدادات Firebase', 'error');
+                }
+            }, 2000);
+        });
+    </script>
 </body>
 </html>
