@@ -1,18 +1,20 @@
 // Firebase Configuration Example
 // قم بنسخ هذا الملف إلى firebase-config.js وأضف بياناتك الخاصة
 
-// Firebase Configuration
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    // استبدل هذه القيم ببيانات مشروعك في Firebase
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAU1VRuWIzg_i6zPQdcI2qlpLKe3RCSWbk",
+  authDomain: "queue3-1c986.firebaseapp.com",
+  databaseURL: "https://queue3-1c986-default-rtdb.firebaseio.com",
+  projectId: "queue3-1c986",
+  storageBucket: "queue3-1c986.firebasestorage.app",
+  messagingSenderId: "607086598036",
+  appId: "1:607086598036:web:9da0e4be5db7c62cd82181",
+  measurementId: "G-Y02LH633BH"
 };
 
+      
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
