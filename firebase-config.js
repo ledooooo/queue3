@@ -1,3 +1,6 @@
+// Firebase Configuration Example
+// قم بنسخ هذا الملف إلى firebase-config.js وأضف بياناتك الخاصة
+
 // Firebase Configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -71,3 +74,22 @@ const firebaseUtils = {
         database.ref(path).off('value');
     }
 };
+
+// Initialize Firebase when script loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Firebase initialized successfully');
+    
+    // Test connection
+    database.ref('.info/connected').on('value', (snapshot) => {
+        if (snapshot.val() === true) {
+            console.log('Connected to Firebase');
+        } else {
+            console.log('Disconnected from Firebase');
+        }
+    });
+});
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { firebaseConfig, database, dbRefs, firebaseUtils };
+}
