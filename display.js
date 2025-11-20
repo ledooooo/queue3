@@ -103,6 +103,7 @@ function updateClinicsDisplay() {
             <div class="text-center py-12">
                 <i class="fas fa-clinic-medical text-6xl text-gray-500 mb-4"></i>
                 <p class="text-gray-400 text-lg">لا توجد عيادات نشطة حالياً</p>
+                <p class="text-gray-500 text-sm">أضف عيادات من لوحة الإدارة</p>
             </div>
         `;
         totalClinics.textContent = '0';
@@ -149,7 +150,7 @@ function highlightClinic(clinicId, number) {
         const clinic = clinics[clinicId];
         if (clinic) {
             document.getElementById('currentCallText').textContent = `عيادة ${clinic.name} - الرقم ${number}`;
-            document.getElementById('currentCallTime').textContent = new Date().toLocaleLocaleString('ar-SA');
+            document.getElementById('currentCallTime').textContent = new Date().toLocaleTimeString('ar-SA');
             document.getElementById('currentCallDisplay').classList.remove('hidden');
             
             // Hide after 10 seconds
@@ -197,6 +198,8 @@ function setupRealTimeListeners() {
 
 // Handle current display updates
 function handleCurrentDisplay(data) {
+    if (!data) return;
+    
     const { clinicId, clinicName, number, timestamp } = data;
     
     // Highlight the clinic
@@ -228,6 +231,8 @@ function handleCurrentDisplay(data) {
 
 // Handle custom message display
 function handleCustomMessage(data) {
+    if (!data) return;
+    
     const { message, timestamp } = data;
     
     // Show custom message modal
@@ -324,7 +329,10 @@ function updateClock() {
         second: '2-digit'
     });
     
-    document.getElementById('currentTime').textContent = timeString;
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.textContent = timeString;
+    }
 }
 
 // Update date
@@ -337,7 +345,10 @@ function updateDate() {
         day: 'numeric'
     });
     
-    document.getElementById('currentDate').textContent = dateString;
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        dateElement.textContent = dateString;
+    }
 }
 
 // Format time for display
@@ -364,6 +375,27 @@ function formatTime(timestamp) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+// Show display error
+function showDisplayError(message) {
+    const errorHTML = `
+        <div class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+            <div class="bg-red-600 text-white rounded-xl p-8 text-center max-w-md">
+                <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold mb-4">خطأ في شاشة العرض</h2>
+                <p class="mb-6">${message}</p>
+                <div class="space-y-3">
+                    <button onclick="location.reload()" class="w-full bg-white text-red-600 py-3 rounded-lg font-semibold hover:bg-gray-100">
+                        <i class="fas fa-redo ml-2"></i>
+                        إعادة المحاولة
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.innerHTML = errorHTML;
 }
 
 // Handle keyboard shortcuts
@@ -440,24 +472,6 @@ window.addEventListener('online', function() {
 });
 
 window.addEventListener('offline', function() {
-    console.log('Network disconnected 
-// Show display error
-function showDisplayError(message) {
-    const errorHTML = `
-        <div class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
-            <div class="bg-red-600 text-white rounded-xl p-8 text-center max-w-md">
-                <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
-                <h2 class="text-2xl font-bold mb-4">خطأ في شاشة العرض</h2>
-                <p class="mb-6">${message}</p>
-                <div class="space-y-3">
-                    <button onclick="location.reload()" class="w-full bg-white text-red-600 py-3 rounded-lg font-semibold hover:bg-gray-100">
-                        <i class="fas fa-redo ml-2"></i>
-                        إعادة المحاولة
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.innerHTML = errorHTML;
-}
+    console.log('Network disconnected - showing offline message');
+    // You could show an offline indicator here
+});

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة العرض - نظام نداء المرضى</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        
+        .display-header {
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        .clinic-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .clinic-card.highlight {
+            animation: highlight-pulse 5s ease-in-out;
+            border-color: #fbbf24;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.6);
+            transform: scale(1.05);
+        }
+        
+        @keyframes highlight-pulse {
+            0% { transform: scale(1); }
+            10% { transform: scale(1.05); }
+            20% { transform: scale(1.02); }
+            30% { transform: scale(1.05); }
+            40% { transform: scale(1.02); }
+            50% { transform: scale(1.05); }
+            60% { transform: scale(1.02); }
+            70% { transform: scale(1.05); }
+            80% { transform: scale(1.02); }
+            90% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+        
+        .number-display {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .news-ticker {
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            animation: scroll-left 30s linear infinite;
+        }
+        
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        
+        .qr-code {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .media-container {
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .clock {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <header class="display-header p-4 shadow-2xl">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="fas fa-hospital text-3xl text-yellow-400 ml-4"></i>
+                <div>
+                    <h1 id="centerName" class="text-2xl font-bold">مركز طبي</h1>
+                    <p class="text-sm text-blue-200">نظام نداء وانتظار المرضى</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <div class="text-center">
+                    <div id="currentDate" class="text-lg font-semibold"></div>
+                    <div id="currentTime" class="clock text-3xl font-bold text-yellow-400"></div>
+                </div>
+                
+                <div class="qr-code">
+                    <div id="qrcode" class="w-20 h-20"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex h-screen">
+        <!-- Left Panel - Clinics -->
+        <div class="w-1/3 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6 text-center">
+                <i class="fas fa-clinic-medical text-green-400 ml-2"></i>
+                العيادات
+            </h2>
+            
+            <div id="clinicsContainer" class="space-y-4">
+                <!-- Clinic cards will be loaded here -->
+            </div>
+            
+            <!-- Queue Info -->
+            <div class="mt-8 bg-white bg-opacity-10 rounded-xl p-4 backdrop-filter backdrop-blur-lg">
+                <h3 class="text-lg font-bold mb-3">
+                    <i class="fas fa-info-circle text-blue-400 ml-2"></i>
+                    معلومات الانتظار
+                </h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>إجمالي العيادات:</span>
+                        <span id="totalClinics" class="font-bold text-yellow-400">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>آخر تحديث:</span>
+                        <span id="lastUpdate" class="font-bold text-green-400">الآن</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Media Display -->
+        <div class="flex-1 p-6">
+            <div class="media-container h-full relative">
+                <!-- Media Content -->
+                <div id="mediaContent" class="w-full h-full flex items-center justify-center">
+                    <div class="text-center">
+                        <i class="fas fa-play-circle text-6xl text-gray-600 mb-4"></i>
+                        <p class="text-xl text-gray-400">جاري تحميل المحتوى...</p>
+                    </div>
+                </div>
+                
+                <!-- Current Call Display -->
+                <div id="currentCallDisplay" class="absolute top-4 right-4 bg-black bg-opacity-80 rounded-xl p-4 backdrop-filter backdrop-blur-lg hidden">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-300 mb-1">النداء الحالي</div>
+                        <div id="currentCallText" class="text-lg font-bold text-yellow-400"></div>
+                        <div id="currentCallTime" class="text-xs text-gray-400 mt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Ticker -->
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900 py-3 overflow-hidden">
+        <div class="news-ticker whitespace-nowrap text-lg font-semibold text-yellow-400">
+            <span id="newsTickerText">مرحباً بكم في مركزنا الطبي - نسعى لتقديم أفضل خدمة طبية لكم</span>
+        </div>
+    </div>
+
+    <!-- Custom Display Modal -->
+    <div id="customDisplayModal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50 flex items-center justify-center">
+        <div class="text-center max-w-4xl mx-auto p-8">
+            <div id="customMessageContent" class="text-6xl font-bold text-white mb-8 leading-relaxed"></div>
+            <div class="text-2xl text-gray-300" id="customMessageTime"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="audio-system.js"></script>
+    <script src="display.js"></script>
+</body>
+</html>
