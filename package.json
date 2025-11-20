@@ -1,0 +1,48 @@
+{
+  "name": "medical-queue-system",
+  "version": "1.0.0",
+  "description": "نظام نداء وانتظار المرضى باللغة العربية - Medical Queue Management System in Arabic",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Open index.html in your browser'",
+    "dev": "echo 'Development server not required - static files'",
+    "build": "echo 'No build process required - static files'",
+    "test": "echo 'No tests configured'"
+  },
+  "keywords": [
+    "medical",
+    "queue",
+    "system",
+    "arabic",
+    "firebase",
+    "realtime",
+    "patient",
+    "management",
+    "hospital",
+    "clinic"
+  ],
+  "author": "Medical Queue System Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/medical-queue-system"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/medical-queue-system/issues"
+  },
+  "homepage": "https://yourusername.github.io/medical-queue-system",
+  "dependencies": {
+    "firebase": "^9.0.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

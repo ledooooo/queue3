@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة التذاكر - نظام نداء المرضى</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .ticket-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .ticket-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ticket-preview {
+            width: 5cm;
+            height: 5cm;
+            border: 2px dashed #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            margin: 2mm;
+            page-break-inside: avoid;
+            position: relative;
+        }
+        
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 5cm);
+            gap: 2mm;
+            justify-content: center;
+            padding: 1cm;
+            background: white;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-section, .print-section * {
+                visibility: visible;
+            }
+            .print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+            .ticket-grid {
+                padding: 1cm;
+                margin: 0;
+            }
+            .ticket-preview {
+                border: 1px solid #ddd;
+                box-shadow: none;
+            }
+        }
+        
+        .number-display {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        
+        .clinic-name {
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .ticket-info {
+            font-size: 0.6rem;
+            text-align: center;
+            color: #666;
+        }
+        
+        .waiting-time {
+            font-size: 0.5rem;
+            color: #888;
+            text-align: center;
+        }
+        
+        .qr-small {
+            width: 20px;
+            height: 20px;
+            margin: 2px auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-print text-3xl text-indigo-600 ml-3"></i>
+                    <h1 class="text-3xl font-bold text-gray-900">طباعة التذاكر</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.print()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700">
+                        <i class="fas fa-print ml-2"></i>
+                        طباعة
+                    </button>
+                    <a href="admin.html" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">
+                        <i class="fas fa-cogs ml-2"></i>
+                        الإدارة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Selection Section -->
+        <div class="ticket-card rounded-xl p-6 shadow-lg mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fas fa-ticket-alt text-indigo-600 ml-3"></i>
+                إعدادات الطباعة
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Clinic Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">اختر العيادة</label>
+                    <select id="clinicSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- اختر العيادة --</option>
+                    </select>
+                </div>
+                
+                <!-- Start Number -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">من رقم</label>
+                    <input type="number" id="startNumber" min="1" value="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <!-- End Number -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">إلى رقم</label>
+                    <input type="number" id="endNumber" min="1" value="20" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <!-- Current Queue Info -->
+                <div class="md:col-span-3">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-blue-800 mb-2">معلومات الدور الحالي</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">الرقم الحالي:</span>
+                                <span id="currentNumber" class="font-bold text-blue-600">--</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">عدد الانتظار:</span>
+                                <span id="waitingCount" class="font-bold text-orange-600">--</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">وقت التقديري:</span>
+                                <span id="estimatedTime" class="font-bold text-green-600">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Generate Button -->
+                <div class="md:col-span-3 text-center">
+                    <button onclick="generateTickets()" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-magic ml-2"></i>
+                        إنشاء التذاكر
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div id="previewSection" class="hidden">
+            <div class="ticket-card rounded-xl p-6 shadow-lg mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-eye text-green-600 ml-3"></i>
+                        معاينة التذاكر
+                    </h2>
+                    <div class="flex space-x-3">
+                        <span id="ticketCount" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">0 تذكرة</span>
+                        <button onclick="clearTickets()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="print-section">
+                    <div id="ticketsGrid" class="ticket-grid">
+                        <!-- Tickets will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="ticket-card rounded-xl p-6 shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-info-circle text-blue-600 ml-2"></i>
+                تعليمات الطباعة
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">إعدادات الصفحة:</h4>
+                    <ul class="space-y-1">
+                        <li>• حجم الورق: A4</li>
+                        <li>• الاتجاه: أفقي (Landscape)</li>
+                        <li>• الهوامش: الحد الأدنى</li>
+                        <li>• نوع الطباعة: ملون أو أبيض وأسود</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">نصائح للطباعة:</h4>
+                    <ul class="space-y-1">
+                        <li>• تأكد من توصيف الهوامش إلى "الحد الأدنى"</li>
+                        <li>• يمكنك طباعة 24 تذكرة في الصفحة الواحدة</li>
+                        <li>• كل تذكرة مقاس 5×5 سم</li>
+                        <li>• استخدم ورق عادي أو ورق ملون</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="tickets.js"></script>
+</body>
+</html>

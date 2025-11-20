@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - نظام نداء المرضى</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .control-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .control-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-control {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-control:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-control:active {
+            transform: translateY(0);
+        }
+        
+        .btn-next {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+        
+        .btn-prev {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+        
+        .btn-repeat {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+        
+        .number-display {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: pulse-number 2s infinite;
+        }
+        
+        @keyframes pulse-number {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .login-form {
+            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .success-animation {
+            animation: success-pulse 0.6s ease-in-out;
+        }
+        
+        @keyframes success-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-gamepad text-3xl text-indigo-600 ml-3"></i>
+                    <h1 class="text-3xl font-bold text-gray-900">لوحة التحكم</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="currentClinicInfo" class="hidden text-right">
+                        <div class="text-sm text-gray-600">العيادة الحالية</div>
+                        <div id="currentClinicName" class="text-lg font-bold text-indigo-600"></div>
+                    </div>
+                    <button id="logoutBtn" onclick="logout()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 hidden">
+                        <i class="fas fa-sign-out-alt ml-2"></i>
+                        خروج
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Login Form -->
+        <div id="loginSection" class="login-form rounded-xl p-8 shadow-2xl">
+            <div class="text-center mb-8">
+                <i class="fas fa-key text-6xl text-indigo-600 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-800">تسجيل الدخول</h2>
+                <p class="text-gray-600 mt-2">اختر العيادة وأدخل كلمة المرور</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">اختر العيادة</label>
+                    <select id="clinicSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg">
+                        <option value="">-- اختر العيادة --</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">كلمة المرور</label>
+                    <div class="relative">
+                        <input type="password" id="passwordInput" class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg" placeholder="أدخل كلمة المرور">
+                        <button type="button" onclick="togglePassword()" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button onclick="login()" class="w-full bg-indigo-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105">
+                    <i class="fas fa-sign-in-alt ml-2"></i>
+                    تسجيل الدخول
+                </button>
+            </div>
+            
+            <div id="loginError" class="mt-4 text-center text-red-600 font-semibold hidden">
+                <i class="fas fa-exclamation-triangle ml-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div id="controlSection" class="hidden">
+            <!-- Current Status -->
+            <div class="control-card rounded-xl p-6 shadow-lg mb-8">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">الحالة الحالية</h2>
+                    <div class="flex justify-center items-center space-x-8">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">الرقم الحالي</div>
+                            <div id="currentNumber" class="number-display text-6xl text-indigo-600">0</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">الوقت</div>
+                            <div id="currentTime" class="text-2xl font-bold text-green-600"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">آخر نداء</div>
+                            <div id="lastCallTime" class="text-lg text-gray-500">لم يتم النداء بعد</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <button onclick="nextPatient()" class="btn-control btn-next text-white py-8 rounded-xl font-bold text-xl shadow-lg">
+                    <i class="fas fa-arrow-right text-3xl mb-2 block"></i>
+                    التالي
+                </button>
+                
+                <button onclick="prevPatient()" class="btn-control btn-prev text-white py-8 rounded-xl font-bold text-xl shadow-lg">
+                    <i class="fas fa-arrow-left text-3xl mb-2 block"></i>
+                    السابق
+                </button>
+                
+                <button onclick="repeatCall()" class="btn-control btn-repeat text-white py-8 rounded-xl font-bold text-xl shadow-lg">
+                    <i class="fas fa-redo text-3xl mb-2 block"></i>
+                    تكرار
+                </button>
+                
+                <button onclick="resetClinic()" class="btn-control btn-reset text-white py-8 rounded-xl font-bold text-xl shadow-lg">
+                    <i class="fas fa-redo-alt text-3xl mb-2 block"></i>
+                    تصفير
+                </button>
+            </div>
+
+            <!-- Advanced Controls -->
+            <div class="control-card rounded-xl p-6 shadow-lg mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-cogs text-purple-600 ml-2"></i>
+                    تحكم متقدم
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Call Specific Number -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-700 mb-3">نداء رقم مخصص</h4>
+                        <div class="flex space-x-2">
+                            <input type="number" id="customNumber" placeholder="الرقم" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <button onclick="callCustomNumber()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-bullhorn"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Custom Message -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-700 mb-3">عرض رسالة</h4>
+                        <div class="flex space-x-2">
+                            <input type="text" id="customMessage" placeholder="الرسالة" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <button onclick="displayCustomMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-comment"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action History -->
+            <div class="control-card rounded-xl p-6 shadow-lg">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-history text-orange-600 ml-2"></i>
+                    سجل العمليات
+                </h3>
+                
+                <div id="actionHistory" class="space-y-2 max-h-48 overflow-y-auto">
+                    <div class="text-center text-gray-500 py-4">
+                        <i class="fas fa-clock text-3xl mb-2"></i>
+                        <p>سيتم عرض سجل العمليات هنا</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <div class="text-center mb-4">
+                    <i id="confirmIcon" class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-2"></i>
+                    <h3 id="confirmTitle" class="text-xl font-bold text-gray-800">تأكيد العملية</h3>
+                </div>
+                
+                <p id="confirmMessage" class="text-gray-600 text-center mb-6">هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+                
+                <div class="flex space-x-3">
+                    <button id="confirmYes" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">
+                        <i class="fas fa-check ml-2"></i>
+                        نعم
+                    </button>
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700">
+                        <i class="fas fa-times ml-2"></i>
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="audio-system.js"></script>
+    <script src="control.js"></script>
+</body>
+</html>

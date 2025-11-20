@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - نظام نداء المرضى</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
+        }
+        .clinic-card {
+            transition: all 0.3s ease;
+        }
+        .clinic-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        .animate-pulse-custom {
+            animation: pulse-custom 2s infinite;
+        }
+        @keyframes pulse-custom {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-cogs text-3xl text-indigo-600 ml-3"></i>
+                    <h1 class="text-3xl font-bold text-gray-900">لوحة الإدارة</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="btn-primary text-white px-6 py-3 rounded-lg font-semibold">
+                        <i class="fas fa-desktop ml-2"></i>
+                        شاشة العرض
+                    </a>
+                    <a href="control.html" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700">
+                        <i class="fas fa-gamepad ml-2"></i>
+                        التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Settings Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Center Settings -->
+            <div class="card rounded-xl p-6 shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-hospital text-indigo-600 ml-3"></i>
+                    إعدادات المركز
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">اسم المركز الطبي</label>
+                        <input type="text" id="centerName" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">سرعة النطق</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="audioSpeed" min="0.5" max="2" step="0.1" value="1" class="flex-1">
+                            <span id="speedValue" class="text-sm font-medium text-gray-600">1.0x</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">نوع الصوت</label>
+                        <select id="audioType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="tts">نطق نصي (TTS)</option>
+                            <option value="mp3">ملفات صوتية (MP3)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">مسار ملفات الصوت</label>
+                        <input type="text" id="audioPath" value="./resources/audio/" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">مسار الميديا</label>
+                        <input type="text" id="mediaPath" value="./resources/media/" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">نص شريط الأخبار</label>
+                        <textarea id="newsTicker" rows="3" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="أدخل نص شريط الأخبار المتحرك..."></textarea>
+                    </div>
+                    
+                    <button onclick="saveSettings()" class="btn-primary w-full text-white py-3 rounded-lg font-semibold">
+                        <i class="fas fa-save ml-2"></i>
+                        حفظ الإعدادات
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card rounded-xl p-6 shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-bolt text-yellow-500 ml-3"></i>
+                    إجراءات سريعة
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 mb-2">التحكم في العرض</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="showCustomMessage()" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-comment ml-2"></i>
+                                عرض رسالة
+                            </button>
+                            <button onclick="clearDisplay()" class="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700">
+                                <i class="fas fa-times ml-2"></i>
+                                مسح الشاشة
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 mb-2">التحكم في الصوت</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="testAudio()" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                <i class="fas fa-volume-up ml-2"></i>
+                                اختبار الصوت
+                            </button>
+                            <button onclick="stopAudio()" class="bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700">
+                                <i class="fas fa-stop ml-2"></i>
+                                إيقاف الصوت
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 mb-2">نداء مخصص</h3>
+                        <div class="flex space-x-2">
+                            <input type="number" id="customNumber" placeholder="الرقم" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                            <select id="customClinic" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">اختر العيادة</option>
+                            </select>
+                            <button onclick="callCustomNumber()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-bullhorn"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinics Management -->
+        <div class="card rounded-xl p-6 shadow-lg mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-clinic-medical text-green-600 ml-3"></i>
+                    إدارة العيادات
+                </h2>
+                <button onclick="addClinic()" class="btn-primary text-white px-6 py-3 rounded-lg font-semibold">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة عيادة
+                </button>
+            </div>
+            
+            <div id="clinicsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Clinics will be loaded here -->
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="card rounded-xl p-6 shadow-lg">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100">
+                        <i class="fas fa-hospital text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600">عدد العيادات</p>
+                        <p id="totalClinics" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card rounded-xl p-6 shadow-lg">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100">
+                        <i class="fas fa-users text-green-600 text-xl"></i>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600">إجمالي الأرقام</p>
+                        <p id="totalNumbers" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card rounded-xl p-6 shadow-lg">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100">
+                        <i class="fas fa-volume-up text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600">حالة الصوت</p>
+                        <p id="audioStatus" class="text-2xl font-bold text-gray-900">جاهز</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Clinic Modal -->
+    <div id="addClinicModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">إضافة عيادة جديدة</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">اسم العيادة</label>
+                        <input type="text" id="newClinicName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">كلمة المرور</label>
+                        <input type="password" id="newClinicPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">الرقم الحالي</label>
+                        <input type="number" id="newClinicNumber" value="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="saveClinic()" class="btn-primary flex-1 text-white py-3 rounded-lg font-semibold">
+                        <i class="fas fa-save ml-2"></i>
+                        حفظ
+                    </button>
+                    <button onclick="closeAddClinicModal()" class="bg-gray-600 flex-1 text-white py-3 rounded-lg font-semibold hover:bg-gray-700">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Message Modal -->
+    <div id="customMessageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">عرض رسالة مخصصة</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">الرسالة</label>
+                        <textarea id="customMessageText" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="أدخل الرسالة التي تريد عرضها..."></textarea>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="displayCustomMessage()" class="btn-primary flex-1 text-white py-3 rounded-lg font-semibold">
+                        <i class="fas fa-eye ml-2"></i>
+                        عرض
+                    </button>
+                    <button onclick="closeCustomMessageModal()" class="bg-gray-600 flex-1 text-white py-3 rounded-lg font-semibold hover:bg-gray-700">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="audio-system.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
